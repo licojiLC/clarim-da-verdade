@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clarim da Verdade — O Jornal que Ilumina</title>
+  <meta name="description" content="Notícias com credibilidade, profundidade e rigor jornalístico.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Design System ──────────────────────────────────── */
+    :root {
+      --ink:      #0D0D0D;
+      --ink-2:    #1A1A1A;
+      --ink-3:    #2C2C2C;
+      --muted:    #5C5C5C;
+      --faint:    #8A8A8A;
+      --rule:     #D0C8B8;
+      --paper:    #F7F4EE;
+      --cream:    #EDE8DC;
+      --gold:     #C49A2A;
+      --gold-2:   #A8821E;
+      --red:      #C0392B;
+      --white:    #FFFFFF;
+
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body:    'Source Serif 4', Georgia, serif;
+      --font-mono:    'JetBrains Mono', monospace;
+
+      --col: 72px;
+      --gap: 24px;
+      --max: 1280px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 17px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Typography ─────────────────────────────────────── */
+    h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); font-weight: 700; line-height: 1.15; }
+
+    /* ── Utilities ──────────────────────────────────────── */
+    .container { max-width: var(--max); margin: 0 auto; padding: 0 32px; }
+    .rule      { border: none; border-top: 1px solid var(--rule); margin: 0; }
+    .rule-thick { border: none; border-top: 3px double var(--ink); }
+
+    /* ── Loading ─────────────────────────────────────────── */
+    #loader {
+      position: fixed; inset: 0;
+      background: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #loader.hidden { opacity: 0; visibility: hidden; }
+    .loader-word {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 6vw, 72px);
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      animation: pulse 1.2s ease-in-out infinite alternate;
+    }
+    @keyframes pulse { from { opacity: 0.4; } to { opacity: 1; } }
+
+    /* ── Top Bar ─────────────────────────────────────────── */
+    .topbar {
+      background: var(--ink);
+      color: var(--cream);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      padding: 6px 0;
+      border-bottom: 2px solid var(--gold);
+    }
+    .topbar-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .topbar a { color: var(--gold); text-decoration: none; transition: opacity 0.2s; }
+    .topbar a:hover { opacity: 0.75; }
+    .topbar .separator { margin: 0 12px; color: var(--faint); }
+    .breaking-ticker {
+      display: flex; align-items: center; gap: 12px; overflow: hidden;
+    }
+    .breaking-badge {
+      background: var(--red);
+      color: var(--white);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      padding: 2px 8px;
+      flex-shrink: 0;
+    }
+    .ticker-text {
+      white-space: nowrap;
+      animation: ticker 30s linear infinite;
+    }
+    @keyframes ticker { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+    /* ── Masthead ─────────────────────────────────────────── */
+    .masthead {
+      padding: 32px 0 20px;
+      text-align: center;
+      border-bottom: 1px solid var(--rule);
+      position: relative;
+    }
+    .masthead::after {
+      content: '';
+      display: block;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold) 80%, transparent);
+      margin-top: 20px;
+    }
+    .masthead-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .masthead-title {
+      font-family: var(--font-display);
+      font-size: clamp(52px, 8vw, 120px);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 0.95;
+      color: var(--ink);
+    }
+    .masthead-title .em { color: var(--gold); font-style: italic; }
+    .masthead-tagline {
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-style: italic;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      margin-top: 12px;
+    }
+    .masthead-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--faint);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Navigation ──────────────────────────────────────── */
+    nav.main-nav {
+      background: var(--ink-2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 2px solid var(--gold);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav-inner::-webkit-scrollbar { display: none; }
+    .nav-item {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cream);
+      text-decoration: none;
+      padding: 14px 20px;
+      white-space: nowrap;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      transition: background 0.2s, color 0.2s;
+      cursor: pointer;
+    }
+    .nav-item:hover, .nav-item.active { background: var(--gold); color: var(--ink); }
+    .nav-search {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+    }
+    .nav-search input {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--cream);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 6px 12px;
+      outline: none;
+      width: 180px;
+      transition: border-color 0.2s, width 0.3s;
+    }
+    .nav-search input:focus { border-color: var(--gold); width: 240px; }
+    .nav-search input::placeholder { color: var(--faint); }
+    .nav-search button {
+      background: var(--gold);
+      border: none;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      padding: 7px 14px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: background 0.2s;
+    }
+    .nav-search button:hover { background: var(--gold-2); }
+
+    /* ── Main Grid ───────────────────────────────────────── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 40px;
+      padding: 40px 0;
+    }
+
+    /* ── Hero Story ──────────────────────────────────────── */
+    .hero {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 40px;
+      padding-bottom: 40px;
+      border-bottom: 3px double var(--ink);
+      margin-bottom: 40px;
+    }
+    .hero-image {
+      position: relative;
+      aspect-ratio: 16/10;
+      overflow: hidden;
+    }
+    .hero-image img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.8s ease;
+    }
+    .hero-image:hover img { transform: scale(1.03); }
+    .hero-image-caption {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.8));
+      color: rgba(255,255,255,0.7);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      padding: 20px 12px 8px;
+      letter-spacing: 0.05em;
+    }
+    .hero-content { display: flex; flex-direction: column; justify-content: center; }
+    .category-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-weight: 500;
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .category-tag::before { content: ''; display: block; width: 24px; height: 1px; background: var(--gold); }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3.5vw, 52px);
+      font-weight: 900;
+      line-height: 1.1;
+      color: var(--ink);
+      margin-bottom: 16px;
+    }
+    .hero-title:hover { color: var(--gold-2); cursor: pointer; }
+    .hero-excerpt {
+      font-size: 17px;
+      color: var(--ink-3);
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+    .article-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--faint);
+      letter-spacing: 0.05em;
+    }
+    .article-meta .author { color: var(--ink-3); font-weight: 500; }
+    .read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 2px solid var(--gold);
+      padding-bottom: 2px;
+      margin-top: 16px;
+      transition: color 0.2s, border-color 0.2s;
+      cursor: pointer;
+      width: fit-content;
+    }
+    .read-more:hover { color: var(--gold); }
+    .read-more::after { content: '→'; transition: transform 0.2s; }
+    .read-more:hover::after { transform: translateX(4px); }
+
+    /* ── Article Cards ───────────────────────────────────── */
+    .articles-column { display: flex; flex-direction: column; gap: 32px; }
+    .article-card {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 20px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--rule);
+      animation: fadeUp 0.5s ease both;
+    }
+    .article-card:last-child { border-bottom: none; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .article-card-image {
+      aspect-ratio: 4/3;
+      overflow: hidden;
+    }
+    .article-card-image img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.5s ease;
+      filter: grayscale(15%);
+    }
+    .article-card:hover .article-card-image img { transform: scale(1.05); filter: grayscale(0); }
+    .article-card-title {
+      font-family: var(--font-display);
+      font-size: 21px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--ink);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .article-card-title:hover { color: var(--gold-2); }
+    .article-card-excerpt {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────── */
+    .sidebar { display: flex; flex-direction: column; gap: 32px; }
+    .sidebar-widget {
+      border-top: 3px double var(--ink);
+      padding-top: 20px;
+    }
+    .widget-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* Opinion column */
+    .opinion-card {
+      padding: 20px;
+      background: var(--cream);
+      border-left: 3px solid var(--gold);
+      margin-bottom: 16px;
+    }
+    .opinion-quote {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-style: italic;
+      line-height: 1.4;
+      color: var(--ink-2);
+      margin-bottom: 10px;
+    }
+    .opinion-author {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--gold);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* Most read */
+    .most-read-item {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--rule);
+      cursor: pointer;
+    }
+    .most-read-item:last-child { border-bottom: none; }
+    .most-read-num {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--rule);
+      line-height: 1;
+    }
+    .most-read-title {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--ink);
+      transition: color 0.2s;
+    }
+    .most-read-item:hover .most-read-title { color: var(--gold-2); }
+
+    /* Newsletter */
+    .newsletter-box {
+      background: var(--ink);
+      color: var(--cream);
+      padding: 24px;
+    }
+    .newsletter-box h3 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .newsletter-box p {
+      font-size: 13px;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .newsletter-box input {
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: var(--cream);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 10px 12px;
+      outline: none;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
+    }
+    .newsletter-box input:focus { border-color: var(--gold); }
+    .newsletter-box input::placeholder { color: rgba(255,255,255,0.3); }
+    .newsletter-box button {
+      width: 100%;
+      background: var(--gold);
+      border: none;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .newsletter-box button:hover { background: var(--gold-2); }
+
+    /* ── Section Dividers ────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 40px 0 24px;
+    }
+    .section-header h2 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .section-header .line {
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+    .section-header .tag {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--white);
+      background: var(--gold);
+      padding: 4px 10px;
+    }
+
+    /* ── Topics Grid ─────────────────────────────────────── */
+    .topics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      background: var(--rule);
+      margin: 40px 0;
+    }
+    .topic-card {
+      background: var(--paper);
+      padding: 24px;
+      transition: background 0.2s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .topic-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 0; height: 3px;
+      background: var(--gold);
+      transition: width 0.3s ease;
+    }
+    .topic-card:hover { background: var(--cream); }
+    .topic-card:hover::before { width: 100%; }
+    .topic-icon {
+      font-size: 28px;
+      margin-bottom: 10px;
+      display: block;
+    }
+    .topic-name {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .topic-count {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--faint);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── Footer ──────────────────────────────────────────── */
+    footer {
+      background: var(--ink);
+      color: var(--cream);
+      margin-top: 60px;
+    }
+    .footer-top {
+      padding: 48px 0 32px;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .footer-brand-name {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 900;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .footer-brand-tagline {
+      font-size: 13px;
+      font-style: italic;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .footer-col-title {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .footer-links a {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-bottom {
+      padding: 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Article Modal (Reader View) ─────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(13,13,13,0.85);
+      z-index: 1000;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 40px 20px;
+      overflow-y: auto;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .modal-overlay.open { opacity: 1; visibility: visible; }
+    .modal {
+      background: var(--paper);
+      max-width: 740px;
+      width: 100%;
+      padding: 60px;
+      position: relative;
+      transform: translateY(20px);
+      transition: transform 0.3s ease;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-close {
+      position: absolute; top: 20px; right: 20px;
+      background: none; border: none;
+      font-family: var(--font-mono);
+      font-size: 20px;
+      cursor: pointer; color: var(--faint);
+      transition: color 0.2s;
+    }
+    .modal-close:hover { color: var(--ink); }
+    .modal-category { margin-bottom: 12px; }
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .modal-meta { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--rule); }
+    .modal-body {
+      font-size: 18px;
+      line-height: 1.75;
+      color: var(--ink-2);
+    }
+    .modal-body p { margin-bottom: 1.5em; }
+    .modal-body h2 { font-size: 26px; margin: 2em 0 0.75em; }
+    .modal-body blockquote {
+      border-left: 3px solid var(--gold);
+      padding-left: 20px;
+      margin: 2em 0;
+      font-style: italic;
+      color: var(--muted);
+    }
+
+    /* ── AI Summary Badge ────────────────────────────────── */
+    .ai-summary {
+      background: linear-gradient(135deg, #0D0D0D, #1A1A1A);
+      border: 1px solid var(--gold);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ai-summary::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--gold), transparent);
+    }
+    .ai-badge {
+      font-family: var(--font-mono);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ai-dot { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+    .ai-text { font-size: 14px; color: rgba(255,255,255,0.75); line-height: 1.6; font-style: italic; }
+
+    /* ── Responsive ──────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-image { aspect-ratio: 16/9; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+      .topics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .container { padding: 0 16px; }
+      .article-card { grid-template-columns: 1fr; }
+      .article-card-image { order: -1; aspect-ratio: 16/9; }
+      .topics-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr; }
+      .modal { padding: 32px 20px; }
+      .masthead-title { font-size: 48px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loader -->
+<div id="loader">
+  <div class="loader-word">CLARIM</div>
+</div>
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="container">
+    <div class="topbar-inner">
+      <div class="breaking-ticker">
+        <span class="breaking-badge">Urgente</span>
+        <span class="ticker-text" id="ticker-text">A carregar últimas notícias...</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0">
+        <span id="current-date" style="color:var(--faint)"></span>
+        <span class="separator">|</span>
+        <a href="#">Assinar</a>
+        <span class="separator">|</span>
+        <a href="#">Entrar</a>
+        <span class="separator">|</span>
+        <a href="#">App</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Masthead -->
+<header class="masthead">
+  <div class="container">
+    <div class="masthead-eyebrow">Fundado em 2024 · Independente · Rigoroso</div>
+    <h1 class="masthead-title">
+      Clarim <span class="em">da</span><br>Verdade
+    </h1>
+    <div class="masthead-tagline">"A imprensa é o cão de guarda da democracia."</div>
+    <div class="masthead-meta">
+      <span id="edition-date"></span>
+      <span>Edição Digital</span>
+      <span>Angola · Portugal · Diáspora</span>
+    </div>
+  </div>
+</header>
+
+<!-- Navigation -->
+<nav class="main-nav">
+  <div class="container">
+    <div class="nav-inner">
+      <a class="nav-item active" onclick="filterCategory('all')">Início</a>
+      <a class="nav-item" onclick="filterCategory('política')">Política</a>
+      <a class="nav-item" onclick="filterCategory('economia')">Economia</a>
+      <a class="nav-item" onclick="filterCategory('sociedade')">Sociedade</a>
+      <a class="nav-item" onclick="filterCategory('mundo')">Mundo</a>
+      <a class="nav-item" onclick="filterCategory('desporto')">Desporto</a>
+      <a class="nav-item" onclick="filterCategory('cultura')">Cultura</a>
+      <a class="nav-item" onclick="filterCategory('tecnologia')">Tecnologia</a>
+      <a class="nav-item" onclick="filterCategory('opinião')">Opinião</a>
+      <div class="nav-search">
+        <input type="text" id="search-input" placeholder="Pesquisar notícias...">
+        <button onclick="doSearch()">Buscar</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<main>
+  <div class="container">
+
+    <!-- Hero Section -->
+    <section id="hero-section" class="hero">
+      <div class="hero-image">
+        <img id="hero-img" src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=900&q=80" alt="Hero">
+        <div class="hero-image-caption">Foto: Arquivo / Clarim da Verdade</div>
+      </div>
+      <div class="hero-content">
+        <div class="category-tag" id="hero-cat">Destaque</div>
+        <h2 class="hero-title" id="hero-title" onclick="openArticle(0)">A carregar manchete...</h2>
+        <p class="hero-excerpt" id="hero-excerpt">A carregar...</p>
+        <div class="article-meta">
+          <span class="author" id="hero-author">—</span>
+          <span id="hero-time">—</span>
+          <span id="hero-read">— min leitura</span>
+        </div>
+        <span class="read-more" onclick="openArticle(0)">Ler artigo completo</span>
+      </div>
+    </section>
+
+    <!-- Articles + Sidebar -->
+    <div class="main-grid">
+      <div>
+        <div class="section-header">
+          <h2>Últimas Notícias</h2>
+          <div class="line"></div>
+          <div class="tag" id="filter-label">Todas</div>
+        </div>
+        <div class="articles-column" id="articles-list">
+          <!-- JS populated -->
+        </div>
+        <div style="text-align:center;margin-top:32px">
+          <button onclick="loadMore()" style="font-family:var(--font-mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;padding:14px 32px;background:transparent;border:2px solid var(--ink);cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='var(--ink)';this.style.color='var(--paper)'" onmouseout="this.style.background='transparent';this.style.color='var(--ink)'">
+            Carregar mais
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-widget">
+          <div class="widget-title">Boletim Informativo</div>
+          <div class="newsletter-box">
+            <h3>Receba a Verdade</h3>
+            <p>Notícias verificadas todos os dias directamente no seu email.</p>
+            <input type="email" id="nl-email" placeholder="o.seu@email.com">
+            <button onclick="subscribeNewsletter()">Subscrever Gratuitamente</button>
+          </div>
+        </div>
+
+        <div class="sidebar-widget">
+          <div class="widget-title">Mais Lidos Hoje</div>
+          <div id="most-read-list"><!-- JS --></div>
+        </div>
+
+        <div class="sidebar-widget">
+          <div class="widget-title">Coluna de Opinião</div>
+          <div id="opinion-list"><!-- JS --></div>
+        </div>
+
+        <div class="sidebar-widget">
+          <div class="widget-title">Temperatura Política</div>
+          <div style="padding:16px;background:var(--cream)">
+            <div style="font-family:var(--font-mono);font-size:10px;color:var(--faint);margin-bottom:12px;letter-spacing:0.1em">APROVAÇÃO DO EXECUTIVO</div>
+            <div style="height:8px;background:var(--rule);margin-bottom:8px">
+              <div style="height:100%;width:52%;background:var(--gold);transition:width 1s ease" id="approval-bar"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:10px;color:var(--faint)">
+              <span>0%</span><span style="color:var(--gold);font-weight:500">52%</span><span>100%</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:10px;font-style:italic">Sondagem Clarim · Março 2025</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Topics -->
+    <section>
+      <div class="section-header">
+        <h2>Editorias</h2>
+        <div class="line"></div>
+      </div>
+      <div class="topics-grid">
+        <div class="topic-card" onclick="filterCategory('política')">
+          <span class="topic-icon">🏛️</span>
+          <div class="topic-name">Política</div>
+          <div class="topic-count">142 artigos</div>
+        </div>
+        <div class="topic-card" onclick="filterCategory('economia')">
+          <span class="topic-icon">📈</span>
+          <div class="topic-name">Economia</div>
+          <div class="topic-count">98 artigos</div>
+        </div>
+        <div class="topic-card" onclick="filterCategory('sociedade')">
+          <span class="topic-icon">🤝</span>
+          <div class="topic-name">Sociedade</div>
+          <div class="topic-count">215 artigos</div>
+        </div>
+        <div class="topic-card" onclick="filterCategory('mundo')">
+          <span class="topic-icon">🌍</span>
+          <div class="topic-name">Mundo</div>
+          <div class="topic-count">187 artigos</div>
+        </div>
+        <div class="topic-card" onclick="filterCategory('cultura')">
+          <span class="topic-icon">🎭</span>
+          <div class="topic-name">Cultura</div>
+          <div class="topic-count">76 artigos</div>
+        </div>
+        <div class="topic-card" onclick="filterCategory('tecnologia')">
+          <span class="topic-icon">💡</span>
+          <div class="topic-name">Tecnologia</div>
+          <div class="topic-count">54 artigos</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-name">Clarim<br>da Verdade</div>
+        <div class="footer-brand-tagline">Jornalismo independente, rigoroso e ao serviço do cidadão. A verdade como missão.</div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:0.1em">
+          ISSN 0000-0000 · Registado na ERC
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Secções</div>
+        <ul class="footer-links">
+          <li><a href="#">Política</a></li>
+          <li><a href="#">Economia</a></li>
+          <li><a href="#">Sociedade</a></li>
+          <li><a href="#">Mundo</a></li>
+          <li><a href="#">Desporto</a></li>
+          <li><a href="#">Cultura</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Jornal</div>
+        <ul class="footer-links">
+          <li><a href="#">Sobre nós</a></li>
+          <li><a href="#">Equipa Editorial</a></li>
+          <li><a href="#">Código Deontológico</a></li>
+          <li><a href="#">Publicidade</a></li>
+          <li><a href="#">Contactos</a></li>
+          <li><a href="#">Arquivo</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Serviços</div>
+        <ul class="footer-links">
+          <li><a href="#">Newsletter</a></li>
+          <li><a href="#">App Móvel</a></li>
+          <li><a href="#">RSS</a></li>
+          <li><a href="#">API para Parceiros</a></li>
+          <li><a href="#">Política de Privacidade</a></li>
+          <li><a href="#">Termos de Uso</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2024–2025 Clarim da Verdade. Todos os direitos reservados.</span>
+      <span>Feito com rigor e responsabilidade.</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Article Modal -->
+<div class="modal-overlay" id="article-modal" onclick="handleModalClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-category category-tag" id="modal-cat"></div>
+    <h2 class="modal-title" id="modal-title"></h2>
+    <div class="article-meta modal-meta">
+      <span class="author" id="modal-author"></span>
+      <span id="modal-time"></span>
+      <span id="modal-read"></span>
+    </div>
+    <div class="ai-summary" id="ai-summary-box">
+      <div class="ai-badge"><div class="ai-dot"></div> Resumo Gerado por IA</div>
+      <div class="ai-text" id="ai-summary-text">A gerar resumo...</div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────
+const ARTICLES = [
+  {
+    id: 0,
+    category: 'Política',
+    title: 'Governo anuncia reforma histórica no sector da educação com investimento de 2 mil milhões',
+    excerpt: 'O executivo apresentou esta manhã um plano ambicioso para transformar o sistema educativo nacional, com foco na digitalização das escolas e formação de professores para o século XXI.',
+    content: `<p>O Governo anunciou hoje aquela que é considerada a maior reforma do sistema educativo em três décadas. O plano, com um investimento total de 2 mil milhões de kwanzas ao longo de cinco anos, visa modernizar as infraestruturas escolares, digitalizar o ensino e reformar os currículos nacionais.</p>
+<p>O ministro da Educação apresentou as linhas gerais do programa numa conferência de imprensa muito aguardada, explicando que o objectivo é "preparar os jovens angolanos para os desafios da economia digital e da globalização".</p>
+<h2>Os três pilares da reforma</h2>
+<p>A reforma assenta em três pilares fundamentais: a digitalização das escolas, com internet de alta velocidade em todas as instituições públicas até 2026; a formação e valorização dos professores, com aumento salarial e programas de actualização pedagógica; e a revisão dos currículos, com maior ênfase em ciências, tecnologia, engenharia e matemática.</p>
+<blockquote>Esta é a maior aposta na educação que este país já fez. Estamos a investir no único recurso que nunca se esgota: o capital humano angolano.</blockquote>
+<p>A oposição recebeu o anúncio com cautela, questionando a origem dos fundos e a capacidade de execução do plano. "São boas intenções, mas já vimos muitas promessas não cumpridas", afirmou um deputado da bancada de oposição.</p>
+<p>Organizações da sociedade civil aplaudiram a iniciativa, mas alertam para a necessidade de transparência na gestão dos recursos e de mecanismos de fiscalização independentes.</p>`,
+    author: 'Maria Fernandes',
+    time: 'Há 2 horas',
+    readTime: 4,
+    image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=900&q=80',
+    featured: true,
+  },
+  {
+    id: 1,
+    category: 'Economia',
+    title: 'Kwanza valoriza 3,2% face ao dólar após dados positivos da produção petrolífera',
+    excerpt: 'A moeda nacional registou a maior subida em seis meses, num contexto de recuperação dos preços do petróleo nos mercados internacionais.',
+    content: `<p>O kwanza registou esta semana uma valorização de 3,2% face ao dólar americano, a maior subida em seis meses, impulsionada por dados positivos da produção petrolífera nacional e pela recuperação dos preços do crude nos mercados internacionais.</p>
+<p>O Banco Nacional de Angola (BNA) atribui esta melhoria a um conjunto de factores, incluindo o aumento da produção diária de barris, que atingiu 1,15 milhões de barris por dia em Março, e às políticas de estabilização monetária implementadas nos últimos trimestres.</p>
+<blockquote>Os fundamentos macroeconómicos estão a melhorar de forma consistente. Esta valorização reflecte a confiança crescente dos mercados na trajectória da economia angolana.</blockquote>
+<p>Analistas independentes alertam, no entanto, para a necessidade de diversificar a economia e reduzir a dependência do petróleo para garantir uma estabilidade cambial sustentável no longo prazo.</p>`,
+    author: 'José António',
+    time: 'Há 4 horas',
+    readTime: 3,
+    image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=80',
+  },
+  {
+    id: 2,
+    category: 'Sociedade',
+    title: 'Nova lei de protecção da criança entra em vigor com medidas mais severas contra abusadores',
+    excerpt: 'A legislação aprovada pela Assembleia Nacional estabelece penas mais pesadas e cria mecanismos de protecção para menores vítimas de violência.',
+    content: `<p>A nova lei de protecção da criança entrou em vigor hoje, após a sua aprovação por unanimidade na Assembleia Nacional. A legislação representa um marco histórico na luta pelos direitos das crianças, estabelecendo penas significativamente mais severas para os crimes de abuso, exploração e negligência de menores.</p>
+<p>Entre as principais novidades, destacam-se a criação de uma linha de emergência nacional gratuita e disponível 24 horas, a obrigatoriedade de denúncia por parte de profissionais de saúde, educação e serviço social, e a criação de tribunais especializados em crimes contra menores nas principais cidades do país.</p>
+<p>A UNICEF em Angola saudou a aprovação da lei, considerando-a "um passo decisivo para a protecção efectiva dos direitos das crianças angolanas".</p>`,
+    author: 'Ana Lúcia Dias',
+    time: 'Há 6 horas',
+    readTime: 5,
+    image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&q=80',
+  },
+  {
+    id: 3,
+    category: 'Mundo',
+    title: 'Cimeira da União Africana debate solução para conflitos no Sahel e financiamento climático',
+    excerpt: 'Líderes de 54 países reuniram-se em Adis Abeba para discutir os principais desafios do continente africano numa agenda dominada pela segurança e pela crise climática.',
+    content: `<p>A 37ª Cimeira da União Africana, realizada esta semana em Adis Abeba, colocou no centro do debate dois dos maiores desafios que o continente enfrenta: a instabilidade política e os conflitos armados no Sahel, e o financiamento necessário para fazer face às alterações climáticas.</p>
+<p>Os líderes africanos adoptaram uma declaração conjunta exigindo uma maior representação do continente nas instituições financeiras internacionais e reiterando a necessidade de os países desenvolvidos cumprirem os compromissos de financiamento climático assumidos no âmbito do Acordo de Paris.</p>
+<p>Angola assumiu um papel de destaque nas negociações, propondo um mecanismo continental de mediação para conflitos regionais.</p>`,
+    author: 'Ricardo Mendes',
+    time: 'Há 8 horas',
+    readTime: 6,
+    image: 'https://images.unsplash.com/photo-1524813686514-a57563d77965?w=600&q=80',
+  },
+  {
+    id: 4,
+    category: 'Tecnologia',
+    title: 'Startup angolana lança plataforma de pagamentos móveis que serve já 200 mil utilizadores',
+    excerpt: 'A fintech fundada em Luanda quer expandir para outros mercados africanos depois de alcançar rentabilidade em apenas 18 meses de operação.',
+    content: `<p>A Kamba Pay, startup angolana de tecnologia financeira, anunciou hoje que a sua plataforma de pagamentos móveis ultrapassou a marca dos 200 mil utilizadores activos, tornando-se uma das maiores fintechs da África Central.</p>
+<p>Fundada há apenas dois anos por uma equipa de engenheiros luandenses, a empresa conseguiu atingir a rentabilidade em 18 meses, um feito invulgar no sector das startups tecnológicas africanas.</p>
+<p>O CEO da empresa revelou que estão em curso negociações para expandir o serviço para o Congo, Zâmbia e Namíbia até ao final do ano, com o apoio de investidores internacionais que injectaram 15 milhões de dólares numa ronda de financiamento Série B.</p>`,
+    author: 'Carlos Bettencourt',
+    time: 'Há 10 horas',
+    readTime: 4,
+    image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=600&q=80',
+  },
+  {
+    id: 5,
+    category: 'Cultura',
+    title: 'Festival de Música Contemporânea de Angola traz artistas de 12 países à capital',
+    excerpt: 'A oitava edição do festival, que decorre durante três dias no Largo da Mutamba, celebra a fusão entre os sons tradicionais africanos e as correntes musicais contemporâneas.',
+    content: `<p>Luanda transforma-se esta semana na capital da música africana contemporânea com o arranque da oitava edição do Festival de Música Contemporânea de Angola. Durante três dias, o Largo da Mutamba acolherá mais de 40 artistas provenientes de 12 países, num programa que mistura semba, kuduro, afrobeat, jazz e música electrónica.</p>
+<p>O festival, que se tornou uma referência cultural no continente, espera receber este ano mais de 50 mil visitantes e contribuirá para o turismo cultural da capital com um impacto económico estimado em 3 milhões de dólares.</p>
+<p>As entradas para as sessões nocturnas esgotaram em menos de 48 horas, demonstrando o crescente interesse por eventos culturais de qualidade entre a população luandense.</p>`,
+    author: 'Sofia Teixeira',
+    time: 'Há 12 horas',
+    readTime: 3,
+    image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80',
+  },
+];
+
+const OPINIONS = [
+  { quote: 'A democracia não se mede pelas eleições, mas pelo que acontece entre elas.', author: 'Prof. António Tomás' },
+  { quote: 'O petróleo envenenou a nossa imaginação política. Precisamos de outros sonhos.', author: 'Dra. Lúcia Pinto' },
+];
+
+const MOST_READ = [
+  'Ministro demite-se após escândalo de contratos públicos',
+  'Preço do cabaz alimentar sobe 8% em três meses',
+  'Seleção nacional classifica-se para a CAN 2026',
+  'Novo hospital universitário abre em Luanda com 400 camas',
+  'Académicos propõem reforma da língua portuguesa em Angola',
+];
+
+const TICKERS = [
+  'Governo aprova orçamento suplementar de 800 mil milhões de kwanzas',
+  'BNA mantém taxa de juro de referência em 19,5%',
+  'Angola ocupa 77º lugar no índice de liberdade de imprensa',
+  'Nova refinaria de Lobito produz primeiro barril de combustível refinado',
+  'Universidade Agostinho Neto inaugura campus digital em parceria com MIT',
+];
+
+// ── State ────────────────────────────────────────────────────
+let currentFilter = 'all';
+let displayedCount = 4;
+
+// ── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Hide loader
+  setTimeout(() => document.getElementById('loader').classList.add('hidden'), 1200);
+
+  // Set dates
+  const now = new Date();
+  const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  const dateStr = now.toLocaleDateString('pt-PT', opts);
+  document.getElementById('current-date').textContent = dateStr;
+  document.getElementById('edition-date').textContent = `${dateStr} · Edição Nº ${Math.floor(Math.random()*500)+1200}`;
+
+  // Ticker
+  document.getElementById('ticker-text').textContent = TICKERS.join('  ·  ');
+
+  // Hero
+  renderHero();
+  renderArticles();
+  renderMostRead();
+  renderOpinions();
+
+  // Approval bar animation
+  setTimeout(() => {
+    const bar = document.getElementById('approval-bar');
+    if (bar) bar.style.width = '52%';
+  }, 1500);
+});
+
+// ── Render ───────────────────────────────────────────────────
+function renderHero() {
+  const a = ARTICLES[0];
+  document.getElementById('hero-img').src = a.image;
+  document.getElementById('hero-img').alt = a.title;
+  document.getElementById('hero-cat').innerHTML = `<svg width="24" height="1" viewBox="0 0 24 1"><line x1="0" y1="0.5" x2="24" y2="0.5" stroke="var(--gold)" stroke-width="1"/></svg> ${a.category}`;
+  document.getElementById('hero-title').textContent = a.title;
+  document.getElementById('hero-excerpt').textContent = a.excerpt;
+  document.getElementById('hero-author').textContent = a.author;
+  document.getElementById('hero-time').textContent = a.time;
+  document.getElementById('hero-read').textContent = `${a.readTime} min leitura`;
+}
+
+function renderArticles() {
+  const filtered = currentFilter === 'all'
+    ? ARTICLES.slice(1)
+    : ARTICLES.slice(1).filter(a => a.category.toLowerCase() === currentFilter);
+
+  const list = document.getElementById('articles-list');
+  list.innerHTML = filtered.slice(0, displayedCount).map((a, i) => `
+    <article class="article-card" style="animation-delay:${i*0.1}s" onclick="openArticle(${a.id})">
+      <div>
+        <div class="category-tag" style="margin-bottom:8px;font-size:9px">${a.category}</div>
+        <h3 class="article-card-title">${a.title}</h3>
+        <p class="article-card-excerpt">${a.excerpt}</p>
+        <div class="article-meta">
+          <span class="author">${a.author}</span>
+          <span>${a.time}</span>
+          <span>${a.readTime} min</span>
+        </div>
+      </div>
+      <div class="article-card-image">
+        <img src="${a.image}" alt="${a.title}" loading="lazy">
+      </div>
+    </article>
+  `).join('');
+}
+
+function renderMostRead() {
+  document.getElementById('most-read-list').innerHTML = MOST_READ.map((t, i) => `
+    <div class="most-read-item">
+      <div class="most-read-num">${i+1}</div>
+      <div class="most-read-title">${t}</div>
+    </div>
+  `).join('');
+}
+
+function renderOpinions() {
+  document.getElementById('opinion-list').innerHTML = OPINIONS.map(o => `
+    <div class="opinion-card">
+      <div class="opinion-quote">"${o.quote}"</div>
+      <div class="opinion-author">${o.author}</div>
+    </div>
+  `).join('');
+}
+
+// ── Interactions ─────────────────────────────────────────────
+function filterCategory(cat) {
+  currentFilter = cat;
+  displayedCount = 4;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('filter-label').textContent =
+    cat === 'all' ? 'Todas' : cat.charAt(0).toUpperCase() + cat.slice(1);
+  renderArticles();
+}
+
+function loadMore() {
+  displayedCount += 3;
+  renderArticles();
+}
+
+function doSearch() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const results = ARTICLES.filter(a =>
+    a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q)
+  );
+  const list = document.getElementById('articles-list');
+  if (!results.length) { list.innerHTML = '<p style="color:var(--muted);font-style:italic;padding:20px 0">Nenhum resultado encontrado.</p>'; return; }
+  currentFilter = 'all';
+  list.innerHTML = results.map((a, i) => `
+    <article class="article-card" style="animation-delay:${i*0.1}s" onclick="openArticle(${a.id})">
+      <div>
+        <div class="category-tag" style="margin-bottom:8px;font-size:9px">${a.category}</div>
+        <h3 class="article-card-title">${a.title}</h3>
+        <p class="article-card-excerpt">${a.excerpt}</p>
+        <div class="article-meta"><span class="author">${a.author}</span><span>${a.time}</span></div>
+      </div>
+      <div class="article-card-image"><img src="${a.image}" alt="${a.title}" loading="lazy"></div>
+    </article>
+  `).join('');
+}
+
+// ── Modal ────────────────────────────────────────────────────
+function openArticle(id) {
+  const a = ARTICLES.find(x => x.id === id);
+  if (!a) return;
+
+  document.getElementById('modal-cat').textContent = a.category;
+  document.getElementById('modal-title').textContent = a.title;
+  document.getElementById('modal-author').textContent = a.author;
+  document.getElementById('modal-time').textContent = a.time;
+  document.getElementById('modal-read').textContent = `${a.readTime} min de leitura`;
+  document.getElementById('modal-body').innerHTML = a.content;
+  document.getElementById('ai-summary-text').textContent = 'A gerar resumo com IA...';
+
+  document.getElementById('article-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Simulate AI summary
+  setTimeout(() => {
+    const summaries = {
+      0: 'O governo anuncia reforma educativa de 2 mil milhões com foco em digitalização e formação docente, mas a oposição questiona a viabilidade e exige transparência.',
+      1: 'O kwanza valorizou 3,2% impulsionado pela produção petrolífera, mas economistas alertam para a necessidade de diversificação económica.',
+      2: 'Nova legislação aprovada por unanimidade cria penas mais severas para abusadores de menores e introduz mecanismos de denúncia obrigatória para profissionais.',
+      3: 'Cimeira da UA centrada em segurança no Sahel e financiamento climático; Angola propõe mecanismo de mediação continental.',
+      4: 'Fintech angolana atinge 200 mil utilizadores e rentabilidade em 18 meses, preparando expansão para mercados vizinhos com 15M$ em investimento.',
+      5: 'Festival de Música de Angola reúne 40 artistas de 12 países no Largo da Mutamba, com ingressos esgotados e impacto económico de 3M$.',
+    };
+    document.getElementById('ai-summary-text').textContent =
+      summaries[id] || 'Resumo gerado automaticamente com base no conteúdo do artigo.';
+  }, 1500);
+}
+
+function closeModal() {
+  document.getElementById('article-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function handleModalClick(e) {
+  if (e.target === document.getElementById('article-modal')) closeModal();
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Newsletter
+function subscribeNewsletter() {
+  const email = document.getElementById('nl-email').value;
+  if (!email || !email.includes('@')) { alert('Por favor, insira um email válido.'); return; }
+  const btn = document.querySelector('.newsletter-box button');
+  btn.textContent = '✔ Subscrito!';
+  btn.style.background = '#27ae60';
+  document.getElementById('nl-email').value = '';
+  setTimeout(() => { btn.textContent = 'Subscrever Gratuitamente'; btn.style.background = 'var(--gold)'; }, 3000);
+}
+</script>
+</body>
+</html>
