@@ -1,0 +1,513 @@
+# ═══════════════════════════════════════════════════════════════
+#  CLARIM DA VERDADE — Kubernetes Manifests
+#  Namespace, Deployments, Services, HPA, NetworkPolicies
+# ═══════════════════════════════════════════════════════════════
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: clarim
+  labels:
+    name: clarim
+    app.kubernetes.io/part-of: clarim-da-verdade
+    istio-injection: enabled
+
+---
+# ── Shared ConfigMap ──────────────────────────────────────────
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clarim-config
+  namespace: clarim
+data:
+  APP_NAME: "Clarim-da-Verdade"
+  NODE_ENV: "production"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  REDIS_URL: "redis://redis-service:6379"
+  KAFKA_BROKERS: "kafka-service:9092"
+  LOG_LEVEL: "info"
+
+---
+# ── Auth Service ──────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: clarim
+  labels:
+    app: auth-service
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "4001"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: clarim-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: auth-service
+          image: clarim/auth-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4001
+              name: http
+          envFrom:
+            - configMapRef:
+                name: clarim-config
+            - secretRef:
+                name: clarim-secrets
+          env:
+            - name: PORT
+              value: "4001"
+            - name: SERVICE_NAME
+              value: "auth-service"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: logs
+              mountPath: /app/logs
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: auth-service
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: clarim
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 4001
+      targetPort: 4001
+      name: http
+  type: ClusterIP
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-service-hpa
+  namespace: clarim
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+---
+# ── Content Service ───────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: content-service
+  namespace: clarim
+  labels:
+    app: content-service
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: content-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: content-service
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "4003"
+    spec:
+      serviceAccountName: clarim-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: content-service
+          image: clarim/content-service:latest
+          ports:
+            - containerPort: 4003
+          envFrom:
+            - configMapRef:
+                name: clarim-config
+            - secretRef:
+                name: clarim-secrets
+          env:
+            - name: PORT
+              value: "4003"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4003
+            initialDelaySeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4003
+            initialDelaySeconds: 45
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: content-service
+  namespace: clarim
+spec:
+  selector:
+    app: content-service
+  ports:
+    - port: 4003
+      targetPort: 4003
+  type: ClusterIP
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: content-service-hpa
+  namespace: clarim
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: content-service
+  minReplicas: 3
+  maxReplicas: 15
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 65
+
+---
+# ── Frontend ──────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: clarim
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: clarim/frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.clarim-da-verdade.co.ao"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: nextjs-cache
+              mountPath: /app/.next/cache
+      volumes:
+        - name: nextjs-cache
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: clarim
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: ClusterIP
+
+---
+# ── Ingress ───────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: clarim-ingress
+  namespace: clarim
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/rate-limit: "200"
+    nginx.ingress.kubernetes.io/rate-limit-window: 1m
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options "SAMEORIGIN" always;
+      add_header X-Content-Type-Options "nosniff" always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+spec:
+  tls:
+    - hosts:
+        - clarim-da-verdade.co.ao
+        - api.clarim-da-verdade.co.ao
+      secretName: clarim-tls
+  rules:
+    - host: clarim-da-verdade.co.ao
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000
+    - host: api.clarim-da-verdade.co.ao
+      http:
+        paths:
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-service
+                port:
+                  number: 4001
+          - path: /api/content
+            pathType: Prefix
+            backend:
+              service:
+                name: content-service
+                port:
+                  number: 4003
+          - path: /api/users
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 4002
+          - path: /api/payments
+            pathType: Prefix
+            backend:
+              service:
+                name: payment-service
+                port:
+                  number: 4004
+          - path: /api/notifications
+            pathType: Prefix
+            backend:
+              service:
+                name: notification-service
+                port:
+                  number: 4005
+          - path: /api/analytics
+            pathType: Prefix
+            backend:
+              service:
+                name: analytics-service
+                port:
+                  number: 4006
+
+---
+# ── Network Policy (Zero Trust) ───────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-default
+  namespace: clarim
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-auth-service
+  namespace: clarim
+spec:
+  podSelector:
+    matchLabels:
+      app: auth-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: gateway
+        - podSelector:
+            matchLabels:
+              app: content-service
+        - podSelector:
+            matchLabels:
+              app: user-service
+      ports:
+        - port: 4001
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgres
+      ports:
+        - port: 5432
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - port: 6379
+
+---
+# ── ServiceAccount ────────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: clarim-service-account
+  namespace: clarim
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/clarim-service-role
+
+---
+# ── PodDisruptionBudget ───────────────────────────────────────
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service-pdb
+  namespace: clarim
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: auth-service
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: content-service-pdb
+  namespace: clarim
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: content-service
