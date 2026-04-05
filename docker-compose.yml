@@ -1,0 +1,283 @@
+version: '3.9'
+
+networks:
+  clarim-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+  kafka_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+x-common: &common
+  restart: unless-stopped
+  networks:
+    - clarim-net
+
+x-svc-env: &svc-env
+  env_file: ../../.env
+  networks:
+    - clarim-net
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  # ── Data Layer ──────────────────────────────────────────────
+  postgres:
+    <<: *common
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-clarim_db}
+      POSTGRES_USER: ${POSTGRES_USER:-clarim_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clarim_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  mongo:
+    <<: *common
+    image: mongo:7-jammy
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-clarim}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    command: ["mongod", "--quiet", "--auth"]
+
+  redis:
+    <<: *common
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1 --save 300 10
+      --loglevel warning
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  # ── Message Broker ──────────────────────────────────────────
+  zookeeper:
+    <<: *common
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    <<: *common
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    ports:
+      - "29092:29092"
+
+  # ── Application Microservices ───────────────────────────────
+  auth-service:
+    <<: *svc-env
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "4001:4001"
+    environment:
+      PORT: 4001
+      SERVICE_NAME: auth-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.services.auth.loadbalancer.server.port=4001"
+
+  user-service:
+    <<: *svc-env
+    build:
+      context: ../../services/user-service
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "4002:4002"
+    environment:
+      PORT: 4002
+      SERVICE_NAME: user-service
+
+  content-service:
+    <<: *svc-env
+    build:
+      context: ../../services/content-service
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "4003:4003"
+    environment:
+      PORT: 4003
+      SERVICE_NAME: content-service
+    depends_on:
+      - mongo
+
+  payment-service:
+    <<: *svc-env
+    build:
+      context: ../../services/payment-service
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "4004:4004"
+    environment:
+      PORT: 4004
+      SERVICE_NAME: payment-service
+
+  notification-service:
+    <<: *svc-env
+    build:
+      context: ../../services/notification-service
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "4005:4005"
+    environment:
+      PORT: 4005
+      SERVICE_NAME: notification-service
+
+  analytics-service:
+    <<: *svc-env
+    build:
+      context: ../../services/analytics-service
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "4006:4006"
+    environment:
+      PORT: 4006
+      SERVICE_NAME: analytics-service
+
+  # ── API Gateway (Traefik) ───────────────────────────────────
+  gateway:
+    <<: *common
+    image: traefik:v3.0
+    command:
+      - "--api.insecure=false"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--metrics.prometheus=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    security_opt:
+      - no-new-privileges:true
+
+  # ── Frontend ────────────────────────────────────────────────
+  frontend:
+    <<: *common
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`clarim.local`)"
+
+  # ── Observability ───────────────────────────────────────────
+  prometheus:
+    <<: *common
+    image: prom/prometheus:v2.51.0
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ../../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    security_opt:
+      - no-new-privileges:true
+
+  grafana:
+    <<: *common
+    image: grafana/grafana:10.4.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin_CHANGE_ME}
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3001
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ../../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3001:3000"
+
+  loki:
+    <<: *common
+    image: grafana/loki:2.9.0
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+    ports:
+      - "3100:3100"
+
+  jaeger:
+    <<: *common
+    image: jaegertracing/all-in-one:1.56
+    environment:
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+    ports:
+      - "16686:16686"
+      - "14268:14268"
